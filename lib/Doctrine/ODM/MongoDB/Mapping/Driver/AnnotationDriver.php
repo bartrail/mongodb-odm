@@ -143,34 +143,43 @@ class AnnotationDriver implements Driver
 
         $documentAnnots = array();
         foreach ($this->reader->getClassAnnotations($reflClass) as $annot) {
+            $nextAnnotation = false;
             foreach (self::$documentAnnotationClasses as $i => $annotClass) {
                 if ($annot instanceof $annotClass) {
                     $documentAnnots[$i] = $annot;
-                    goto next_annotation;
+                    $nextAnnotation     = true;
+                    break;
+                    //note: this goto statement somehow brakes page loading and causing an empty page
+                    //      in ubuntu 11.04 with php 5.3.5-ubuntu7.2
+                    //goto next_annotation;
                 }
             }
 
-            // non-document class annotations
-            if ($annot instanceof ODM\AbstractIndex) {
-                $this->addIndex($class, $annot);
-            }
-            if ($annot instanceof ODM\Indexes) {
-                foreach (is_array($annot->value) ? $annot->value : array($annot->value) as $index) {
-                    $this->addIndex($class, $index);
+            if($nextAnnotation == false) {
+
+                // non-document class annotations
+                if ($annot instanceof ODM\AbstractIndex) {
+                    $this->addIndex($class, $annot);
                 }
-            } elseif ($annot instanceof ODM\InheritanceType) {
-                $class->setInheritanceType(constant('Doctrine\\ODM\\MongoDB\\Mapping\\ClassMetadata::INHERITANCE_TYPE_'.$annot->value));
-            } elseif ($annot instanceof ODM\DiscriminatorField) {
-                $class->setDiscriminatorField(array('fieldName' => $annot->fieldName));
-            } elseif ($annot instanceof ODM\DiscriminatorMap) {
-                $class->setDiscriminatorMap($annot->value);
-            } elseif ($annot instanceof ODM\DiscriminatorValue) {
-                $class->setDiscriminatorValue($annot->value);
-            } elseif ($annot instanceof ODM\ChangeTrackingPolicy) {
-                $class->setChangeTrackingPolicy(constant('Doctrine\\ODM\\MongoDB\\Mapping\\ClassMetadata::CHANGETRACKING_'.$annot->value));
+                if ($annot instanceof ODM\Indexes) {
+                    foreach (is_array($annot->value) ? $annot->value : array($annot->value) as $index) {
+                        $this->addIndex($class, $index);
+                    }
+                } elseif ($annot instanceof ODM\InheritanceType) {
+                    $class->setInheritanceType(constant('Doctrine\\ODM\\MongoDB\\Mapping\\ClassMetadata::INHERITANCE_TYPE_'.$annot->value));
+                } elseif ($annot instanceof ODM\DiscriminatorField) {
+                    $class->setDiscriminatorField(array('fieldName' => $annot->fieldName));
+                } elseif ($annot instanceof ODM\DiscriminatorMap) {
+                    $class->setDiscriminatorMap($annot->value);
+                } elseif ($annot instanceof ODM\DiscriminatorValue) {
+                    $class->setDiscriminatorValue($annot->value);
+                } elseif ($annot instanceof ODM\ChangeTrackingPolicy) {
+                    $class->setChangeTrackingPolicy(constant('Doctrine\\ODM\\MongoDB\\Mapping\\ClassMetadata::CHANGETRACKING_'.$annot->value));
+                }
+
             }
 
-            next_annotation:
+            //next_annotation:
         }
 
         if (!$documentAnnots) {
